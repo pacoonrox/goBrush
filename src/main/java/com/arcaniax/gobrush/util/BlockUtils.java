@@ -35,19 +35,11 @@ public class BlockUtils {
     }
 
     public static int getWorldMin(Location loc) {
-        if (NEWER_WORLD_VERSION) {
-            return loc.getWorld().getMinHeight();
-        } else {
-            return 0;
-        }
+        return 0;
     }
 
     public static int getWorldMax(Location loc) {
-        if (NEWER_WORLD_VERSION) {
-            return loc.getWorld().getMaxHeight();
-        } else {
-            return 255;
-        }
+        return loc.getWorld().getMaxHeight();
     }
 
 }

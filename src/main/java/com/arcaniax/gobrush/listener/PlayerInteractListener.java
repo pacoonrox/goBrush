@@ -18,6 +18,7 @@
  */
 package com.arcaniax.gobrush.listener;
 
+import com.arcaniax.gobrush.GoBrushPlugin;
 import com.arcaniax.gobrush.Session;
 import com.arcaniax.gobrush.object.BrushPlayer;
 import com.arcaniax.gobrush.util.BlockUtils;
@@ -25,16 +26,13 @@ import com.arcaniax.gobrush.util.BrushPlayerUtil;
 import com.arcaniax.gobrush.util.GuiGenerator;
 import com.arcaniax.gobrush.util.NestedFor;
 import com.arcaniax.gobrush.util.XMaterial;
-import com.fastasyncworldedit.core.Fawe;
-import com.fastasyncworldedit.core.queue.implementation.QueueHandler;
 import com.sk89q.worldedit.EditSession;
 import com.sk89q.worldedit.LocalSession;
+import com.sk89q.worldedit.MaxChangedBlocksException;
 import com.sk89q.worldedit.WorldEdit;
-import com.sk89q.worldedit.bukkit.BukkitAdapter;
-import com.sk89q.worldedit.math.BlockVector3;
-import com.sk89q.worldedit.math.Vector3;
-import com.sk89q.worldedit.world.block.BlockState;
-import com.sk89q.worldedit.world.block.BlockTypes;
+import com.sk89q.worldedit.blocks.BaseBlock;
+import com.sk89q.worldedit.bukkit.BukkitPlayer;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -63,7 +61,7 @@ public class PlayerInteractListener implements Listener {
     @EventHandler
     public void onClickEvent(final PlayerInteractEvent event) {
         final Player player = event.getPlayer();
-        final boolean holdingFlint = player.getInventory().getItemInMainHand().getType() == Material.FLINT;
+        final boolean holdingFlint = player.getInventory().getItemInHand().getType() == Material.FLINT;
 
         if (!holdingFlint) {
             return;
@@ -71,7 +69,7 @@ public class PlayerInteractListener implements Listener {
         if (!player.hasPermission(PERMISSION_USE)) {
             return;
         }
-        if (event.getPlayer().getInventory().getItemInMainHand().getType() == XMaterial.FLINT.parseMaterial()
+        if (event.getPlayer().getInventory().getItemInHand().getType() == XMaterial.FLINT.parseMaterial()
                 && ((event.getAction().equals(Action.RIGHT_CLICK_AIR))
                 || (event.getAction().equals(Action.RIGHT_CLICK_BLOCK)))) {
             BrushPlayer brushPlayer = Session.getBrushPlayer(player.getUniqueId());
@@ -95,13 +93,13 @@ public class PlayerInteractListener implements Listener {
             if (loc == null) {
                 return;
             }
-            LocalSession localSession = WorldEdit.getInstance().getSessionManager().get(BukkitAdapter.adapt(event.getPlayer()));
-            QueueHandler queue = Fawe.instance().getQueueHandler();
-            queue.async(() -> {
+            BukkitPlayer bPlayer = new BukkitPlayer(Session.getWorldEdit(), Session.getWorldEdit().getServerInterface(), event.getPlayer());
+            LocalSession localSession = WorldEdit.getInstance().getSessionManager().get(bPlayer);
+            Bukkit.getScheduler().runTaskAsynchronously(GoBrushPlugin.plugin, () -> {
                 synchronized (localSession) {
-                    EditSession editsession = localSession.createEditSession(BukkitAdapter.adapt(event.getPlayer()));
+                    EditSession editsession = localSession.createEditSession(bPlayer);
                     try {
-                        HashMap<Vector3, BlockState> blocksToSet = new HashMap<>();
+                        HashMap<com.sk89q.worldedit.Vector, BaseBlock> blocksToSet = new HashMap<>();
                         try {
                             editsession.setFastMode(false);
                             int size = brushPlayer.getBrushSize();
@@ -129,7 +127,7 @@ public class PlayerInteractListener implements Listener {
                                         );
                                         if (editsession.getMask() == null || editsession
                                                 .getMask()
-                                                .test(BlockVector3.at(loopLoc.getBlockX(), worldHeight, loopLoc.getBlockZ()))) {
+                                                .test(new com.sk89q.worldedit.Vector(loopLoc.getBlockX(), worldHeight, loopLoc.getBlockZ()))) {
                                             double height = BrushPlayerUtil.getHeight(player, x - min, z - min, cardinal);
                                             double subHeight = height % 1.0D;
                                             if (random > 1.0 - subHeight) {
@@ -146,14 +144,13 @@ public class PlayerInteractListener implements Listener {
                                                     if ((!brushPlayer.isFlatMode()) || l.getBlockY() + y <= loc.getY()) {
                                                         try {
                                                             blocksToSet.put(
-                                                                    Vector3.at(
+                                                                    new com.sk89q.worldedit.Vector(
                                                                             l.getBlockX(),
                                                                             l.getBlockY() + y,
                                                                             l.getBlockZ()
                                                                     ),
-                                                                    editsession.getBlock(Vector3
-                                                                            .at(l.getBlockX(), l.getBlockY(), l.getBlockZ())
-                                                                            .toBlockPoint())
+                                                                    editsession.getBlock(new com.sk89q.worldedit.Vector(
+                                                                            l.getBlockX(), l.getBlockY(), l.getBlockZ()))
                                                             );
                                                         } catch (Exception ignored) {
                                                         }
@@ -162,16 +159,15 @@ public class PlayerInteractListener implements Listener {
                                             } else {
                                                 for (int y = 0; y < Math.floor(height); y++) {
                                                     if ((!brushPlayer.isFlatMode()) || l.getBlockY() - y > loc.getY()) {
-                                                        if (editsession.getMask() == null || editsession.getMask().test(Vector3
-                                                                .at(l.getBlockX(), l.getBlockY() - y, l.getBlockZ())
-                                                                .toBlockPoint())) {
+                                                        if (editsession.getMask() == null || editsession.getMask().test(
+                                                                new com.sk89q.worldedit.Vector(l.getBlockX(), l.getBlockY() - y, l.getBlockZ()))) {
                                                             if (!(l.getBlockY() - y < BlockUtils.getWorldMin(l))) {
                                                                 try {
-                                                                    blocksToSet.put(Vector3.at(
+                                                                    blocksToSet.put(new com.sk89q.worldedit.Vector(
                                                                             l.getBlockX(),
-                                                                            l.getBlockY() + y,
+                                                                            l.getBlockY() - y,
                                                                             l.getBlockZ()
-                                                                    ), BlockTypes.AIR.getDefaultState());
+                                                                    ), new BaseBlock(0));
                                                                 } catch (Exception ignored) {
                                                                 }
                                                             }
@@ -182,13 +178,11 @@ public class PlayerInteractListener implements Listener {
                                         }
                                     }
                                 }
-                                for (Vector3 block : blocksToSet.keySet()) {
-                                    editsession.setBlock(
-                                            block.toBlockPoint().getBlockX(),
-                                            block.toBlockPoint().getBlockY(),
-                                            block.toBlockPoint().getBlockZ(),
-                                            blocksToSet.get(block)
-                                    );
+                                for (com.sk89q.worldedit.Vector block : blocksToSet.keySet()) {
+                                    try {
+                                        editsession.setBlock(block, blocksToSet.get(block));
+                                    } catch (MaxChangedBlocksException ignored) {
+                                    }
                                 }
                                 blocksToSet.clear();
                             } else { //3D Mode
@@ -241,7 +235,7 @@ public class PlayerInteractListener implements Listener {
                                     );
 
                                     if (blockLoc != null && (editsession.getMask() == null || editsession.getMask().test(
-                                            BlockVector3.at(blockLoc.getBlockX(), blockLoc.getBlockY(), blockLoc.getBlockZ())))) {
+                                            new com.sk89q.worldedit.Vector(blockLoc.getBlockX(), blockLoc.getBlockY(), blockLoc.getBlockZ())))) {
                                         double height = BrushPlayerUtil.getHeight(
                                                 player,
                                                 indices[0] - min,
@@ -261,18 +255,16 @@ public class PlayerInteractListener implements Listener {
                                                 if (!brushPlayer.isFlatMode()) {
                                                     try {
                                                         blocksToSet.put(
-                                                                Vector3.at(
+                                                                new com.sk89q.worldedit.Vector(
                                                                         blockLoc.getBlockX() + _v.getBlockX(),
                                                                         blockLoc.getBlockY() + _v.getBlockY(),
                                                                         blockLoc.getBlockZ() + _v.getBlockZ()
                                                                 ),
-                                                                editsession.getBlock(Vector3
-                                                                        .at(
-                                                                                blockLoc.getBlockX(),
-                                                                                blockLoc.getBlockY(),
-                                                                                blockLoc.getBlockZ()
-                                                                        )
-                                                                        .toBlockPoint())
+                                                                editsession.getBlock(new com.sk89q.worldedit.Vector(
+                                                                        blockLoc.getBlockX(),
+                                                                        blockLoc.getBlockY(),
+                                                                        blockLoc.getBlockZ()
+                                                                ))
                                                         );
                                                     } catch (Exception ignored) {
                                                     }
@@ -281,18 +273,16 @@ public class PlayerInteractListener implements Listener {
                                                     if (place.distance(loopLoc) > loc.distance(start)) {
                                                         try {
                                                             blocksToSet.put(
-                                                                    Vector3.at(
+                                                                    new com.sk89q.worldedit.Vector(
                                                                             blockLoc.getBlockX() + _v.getBlockX(),
                                                                             blockLoc.getBlockY() + _v.getBlockY(),
                                                                             blockLoc.getBlockZ() + _v.getBlockZ()
                                                                     ),
-                                                                    editsession.getBlock(Vector3
-                                                                            .at(
-                                                                                    blockLoc.getBlockX(),
-                                                                                    blockLoc.getBlockY(),
-                                                                                    blockLoc.getBlockZ()
-                                                                            )
-                                                                            .toBlockPoint())
+                                                                    editsession.getBlock(new com.sk89q.worldedit.Vector(
+                                                                            blockLoc.getBlockX(),
+                                                                            blockLoc.getBlockY(),
+                                                                            blockLoc.getBlockZ()
+                                                                    ))
                                                             );
                                                         } catch (Exception ignored) {
                                                         }
@@ -302,18 +292,16 @@ public class PlayerInteractListener implements Listener {
                                                 if (!brushPlayer.isFlatMode()) {
                                                     try {
                                                         blocksToSet.put(
-                                                                Vector3.at(
+                                                                new com.sk89q.worldedit.Vector(
                                                                         blockLoc.getBlockX() + _v.getBlockX(),
                                                                         blockLoc.getBlockY() + _v.getBlockY(),
                                                                         blockLoc.getBlockZ() + _v.getBlockZ()
                                                                 ),
-                                                                editsession.getBlock(Vector3
-                                                                        .at(
-                                                                                blockLoc.getBlockX(),
-                                                                                blockLoc.getBlockY(),
-                                                                                blockLoc.getBlockZ()
-                                                                        )
-                                                                        .toBlockPoint())
+                                                                editsession.getBlock(new com.sk89q.worldedit.Vector(
+                                                                        blockLoc.getBlockX(),
+                                                                        blockLoc.getBlockY(),
+                                                                        blockLoc.getBlockZ()
+                                                                ))
                                                         );
                                                     } catch (Exception ignored) {
                                                     }
@@ -322,18 +310,16 @@ public class PlayerInteractListener implements Listener {
                                                     if (place.distance(loopLoc) < loc.distance(start) - 1) {
                                                         try {
                                                             blocksToSet.put(
-                                                                    Vector3.at(
+                                                                    new com.sk89q.worldedit.Vector(
                                                                             blockLoc.getBlockX() + _v.getBlockX(),
                                                                             blockLoc.getBlockY() + _v.getBlockY(),
                                                                             blockLoc.getBlockZ() + _v.getBlockZ()
                                                                     ),
-                                                                    editsession.getBlock(Vector3
-                                                                            .at(
-                                                                                    blockLoc.getBlockX(),
-                                                                                    blockLoc.getBlockY(),
-                                                                                    blockLoc.getBlockZ()
-                                                                            )
-                                                                            .toBlockPoint())
+                                                                    editsession.getBlock(new com.sk89q.worldedit.Vector(
+                                                                            blockLoc.getBlockX(),
+                                                                            blockLoc.getBlockY(),
+                                                                            blockLoc.getBlockZ()
+                                                                    ))
                                                             );
                                                         } catch (Exception ignored) {
                                                         }
@@ -346,35 +332,31 @@ public class PlayerInteractListener implements Listener {
                                 NestedFor nf = new NestedFor(min - 1, max, threeDimensionModeXZLoops);
                                 nf.nFor(2);
 
-                                for (Vector3 block : blocksToSet.keySet()) {
+                                for (com.sk89q.worldedit.Vector block : blocksToSet.keySet()) {
                                     if (brushPlayer.isDirectionMode()) {
-                                        editsession.setBlock(
-                                                block.toBlockPoint().getBlockX(),
-                                                block.toBlockPoint().getBlockY(),
-                                                block.toBlockPoint().getBlockZ(),
-                                                blocksToSet.get(block)
-                                        );
+                                        try {
+                                            editsession.setBlock(block, blocksToSet.get(block));
+                                        } catch (MaxChangedBlocksException ignored) {
+                                        }
                                     } else {
-                                        editsession.setBlock(
-                                                block.toBlockPoint().getBlockX(),
-                                                block.toBlockPoint().getBlockY(),
-                                                block.toBlockPoint().getBlockZ(),
-                                                BlockTypes.AIR.getDefaultState()
-                                        );
+                                        try {
+                                            editsession.setBlock(block, new BaseBlock(0));
+                                        } catch (MaxChangedBlocksException ignored) {
+                                        }
                                     }
                                 }
                                 blocksToSet.clear();
                             }
                         } finally {
 
-                            editsession.commit();
+                            editsession.flushQueue();
                         }
                     } finally {
                         localSession.remember(editsession);
                     }
                 }
             });
-        } else if ((event.getPlayer().getInventory().getItemInMainHand().getType() == XMaterial.FLINT.parseMaterial())
+        } else if ((event.getPlayer().getInventory().getItemInHand().getType() == XMaterial.FLINT.parseMaterial())
                 && ((event.getAction().equals(Action.LEFT_CLICK_AIR))
                 || (event.getAction().equals(Action.LEFT_CLICK_BLOCK)))) {
             event.setCancelled(true);

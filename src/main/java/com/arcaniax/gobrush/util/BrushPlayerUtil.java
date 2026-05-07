@@ -21,7 +21,6 @@ package com.arcaniax.gobrush.util;
 import com.arcaniax.gobrush.Session;
 import com.arcaniax.gobrush.object.BrushPlayer;
 import com.sk89q.worldedit.EditSession;
-import com.sk89q.worldedit.math.Vector3;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -46,9 +45,8 @@ public class BrushPlayerUtil {
         Vector v = player.getEyeLocation().getDirection().multiply(0.5);
 
         while (locMaterial == air
-                || (!(session.getMask() == null || session.getMask().test(Vector3
-                .at(loc.getBlockX(), loc.getBlockY(), loc.getBlockZ())
-                .toBlockPoint())))
+                || (!(session.getMask() == null || session.getMask().test(
+                new com.sk89q.worldedit.Vector(loc.getBlockX(), loc.getBlockY(), loc.getBlockZ()))))
                 && (loc.distance(l.clone().add(0.5, 0.5, 0.5)) < ((double) brushSize / (double) 4))) {
             loc.add(v);
             boolean newBlockPos =

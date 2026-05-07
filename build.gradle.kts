@@ -19,7 +19,7 @@ the<JavaPluginExtension>().toolchain {
 }
 
 configurations.all {
-    attributes.attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 21)
+    attributes.attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 17)
 }
 
 java {
@@ -29,7 +29,7 @@ java {
 }
 
 tasks.compileJava.configure {
-    options.release.set(21)
+    options.release.set(17)
 }
 
 repositories {
@@ -39,18 +39,18 @@ repositories {
     maven { url = uri("https://s01.oss.sonatype.org/content/repositories/snapshots/") }
     maven { url = uri("https://repo.papermc.io/repository/maven-public/") }
     maven { url = uri("https://hub.spigotmc.org/nexus/content/repositories/snapshots/") }
+    maven { url = uri("https://maven.enginehub.org/repo/") }
 }
 
 dependencies {
-    implementation(platform("com.intellectualsites.bom:bom-newest:1.56"))
     compileOnly("org.spigotmc:spigot-api:1.8.8-R0.1-SNAPSHOT")
     compileOnly("com.mojang:authlib:1.5.25")
-    compileOnly("com.fastasyncworldedit:FastAsyncWorldEdit-Bukkit")
+    compileOnly(files("libs/worldedit-bukkit-6.1.9.jar"))
     implementation("net.lingala.zip4j:zip4j:2.11.5")
     implementation("dev.notmyfault.serverlib:ServerLib:2.3.7")
     implementation("org.bstats:bstats-bukkit:3.1.0")
     implementation("org.bstats:bstats-base:3.1.0")
-    implementation("io.papermc:paperlib:")
+    implementation("io.papermc:paperlib:1.0.8")
 }
 
 var buildNumber by extra("")

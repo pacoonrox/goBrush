@@ -23,18 +23,11 @@ import com.mojang.authlib.properties.Property;
 import org.bukkit.ChatColor;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.SkullMeta;
-import org.bukkit.profile.PlayerProfile;
-import org.bukkit.profile.PlayerTextures;
 import org.bukkit.Material;
-import org.bukkit.Bukkit;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
 import java.util.UUID;
 
 public class HeadURL {
@@ -43,22 +36,18 @@ public class HeadURL {
     public static String downB64 = "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvZDM3MGFjNWYzY2JmZDk4ZDBhMWJkNDU2ZWM4MWFkNjIxZGI0YjZlZDQ1MTk0ZGU4MGJiY2I3OWFjNDA5NGMzIn19fQ==";
     public static String _3DB64 = "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNmNmYTRmYzk4YzliMWIyNGE4YjAyZjY5NDM1MTNmYmIyMmRiMWQzNzRhODdmZGU5MWI3NTkzOWU1YThhMiJ9fX0=";
 
+    @SuppressWarnings("deprecation")
     public static ItemStack create(String data, String name, String lore) {
-        ItemStack item = new ItemStack(Material.PLAYER_HEAD, 1);
+        ItemStack item = new ItemStack(Material.SKULL_ITEM, 1, (short) 3);
         SkullMeta headMeta = (SkullMeta) item.getItemMeta();
         try {
-                PlayerProfile playerProfile = Bukkit.getServer().createPlayerProfile(UUID.randomUUID(), "goBrush");
-                PlayerTextures texture = playerProfile.getTextures();
-                String url = null;
-                byte[] decoded = Base64.getDecoder().decode(data);
-                try {
-                    url = new String(decoded, StandardCharsets.UTF_8);
-                } catch (Exception ignored) {}
-                url = url.replace("{\"textures\":{\"SKIN\":{\"url\":\"", "").replace("\"}}}", "");
-                texture.setSkin(new URL(url));
-                headMeta.setOwnerProfile(playerProfile);
-            } catch (Exception ignored) {
-            }
+            GameProfile profile = new GameProfile(UUID.randomUUID(), null);
+            profile.getProperties().put("textures", new Property("textures", data));
+            Field profileField = headMeta.getClass().getDeclaredField("profile");
+            profileField.setAccessible(true);
+            profileField.set(headMeta, profile);
+        } catch (Exception ignored) {
+        }
         if (!lore.isEmpty()) {
             String[] loreListArray = lore.split("___");
             List<String> loreList = new ArrayList<String>();
