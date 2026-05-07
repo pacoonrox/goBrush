@@ -29,7 +29,7 @@ java {
 }
 
 tasks.compileJava.configure {
-    options.release.set(8)
+    options.release.set(21)
 }
 
 repositories {
@@ -38,12 +38,12 @@ repositories {
     maven { url = uri("https://libraries.minecraft.net/") }
     maven { url = uri("https://s01.oss.sonatype.org/content/repositories/snapshots/") }
     maven { url = uri("https://repo.papermc.io/repository/maven-public/") }
+    maven { url = uri("https://hub.spigotmc.org/nexus/content/repositories/snapshots/") }
 }
 
 dependencies {
     implementation(platform("com.intellectualsites.bom:bom-newest:1.56"))
-    compileOnly("io.papermc.paper:paper-api:1.21.1-R0.1-SNAPSHOT")
-    compileOnly("net.md-5:bungeecord-api:1.21-R0.4")
+    compileOnly("org.spigotmc:spigot-api:1.8.8-R0.1-SNAPSHOT")
     compileOnly("com.mojang:authlib:1.5.25")
     compileOnly("com.fastasyncworldedit:FastAsyncWorldEdit-Bukkit")
     implementation("net.lingala.zip4j:zip4j:2.11.5")
